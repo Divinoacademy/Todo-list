@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./todo.css">
+    <title>Todo List</title>
+</head>
+<body>
+    <h1>Todo List</h1>
+    <div class="input-container">
+        <input type="text" id="taskInput" placeholder="Enter a new task">
+        <button id="addTaskButton">Add Task</button>
+    </div>
+    <div class="lists">
+        <div class="todo-list">
+            <h2>Todo Tasks</h2>
+            <ul id="todoList"></ul>
+            <button id="clearTodoButton">Clear Todo List</button>
+        </div>
+        <div class="completed-list">
+            <h2>Completed Tasks</h2>
+            <ul id="completedList"></ul>
+            <button id="clearCompletedButton">Clear Completed List</button>
+        </div>
+    </div>
+    <script src="./eruda.js"></script>
+<script>eruda.init();</script>
+    <script src="./todo.js"></script>
+</body>
+</html>
