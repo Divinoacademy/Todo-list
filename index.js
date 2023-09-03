@@ -32,8 +32,8 @@ app.post('/api/tasks', async (req, res) => {
        
      } else {
       
-      const uncompletedData = await readFile('./database/uncompleted.json');
-      const completedData = await readFile('./database/completed.json');
+      let uncompletedData = await readFile('./database/uncompleted.json');
+      let completedData = await readFile('./database/completed.json');
       const totalArr = [...uncompletedData, ...completedData];
      
       if (req.body.completed !== false) {
@@ -46,11 +46,16 @@ app.post('/api/tasks', async (req, res) => {
               text: req.body.text,
               completed: req.body.completed
           }
-          uncompletedData.push(newTask);
+          
+          if (uncompletedData == '') {
+            uncompletedData = [newTask]
+          } else {
+            uncompletedData.push(newTask);
+          }
           
           await fs.writeFile('./database/uncompleted.json', JSON.stringify(uncompletedData), (err) => {
               if (err) console.log("Error in overwiting file", err)
-              console.log("Successfully written into the file")
+              return console.log("Successfully written into the file")
           })
           
            await res.json(uncompletedData)
@@ -75,13 +80,18 @@ function validateData(data) {
     }
     return Joi.validate(data,
         joiSchema)
-}
+} 
+
 
 // Function for reading and return data of a given file path
 async function readFile(filePath) {
     try {
         const data = await fs.readFile(filePath, 'utf-8');
+       if (data == '') {
+        return data;
+       } else {
         return JSON.parse(data);
+       }
     } catch ( error ) {
         throw error
     }
