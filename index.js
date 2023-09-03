@@ -82,7 +82,6 @@ function validateData(data) {
         joiSchema)
 } 
 
-
 // Function for reading and return data of a given file path
 async function readFile(filePath) {
     try {
