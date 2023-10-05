@@ -5,86 +5,74 @@ const completedList = document.getElementById("completedList");
 const clearTodoButton = document.getElementById("clearTodoButton");
 const clearCompletedButton = document.getElementById("clearCompletedButton");
 
-addTaskButton.addEventListener("click", addTask);
-clearTodoButton.addEventListener("click", clearTodoList);
-clearCompletedButton.addEventListener("click", clearCompletedList);
-
-
-
-
-
-
-
-
-
-
-function addTask() {
-    const taskText = taskInput.value.trim();
-    console.log(taskText)
-    if (taskText !== "") {
-        const listItem = document.createElement("li");
-        listItem.textContent = taskText;
-        listItem.addEventListener("click", completeTask);
-        todoList.appendChild(listItem);
-        taskInput.value = "";
-    }
-}
-function completeTask() {
-    const listItem = this;
-    completedList.appendChild(listItem);
-    listItem.removeEventListener("click", completeTask);
-    listItem.addEventListener("click", uncompleteTask);
-}
-function uncompleteTask() {
-    const listItem = this;
-    console.log(this)
-    todoList.appendChild(listItem);
-    listItem.removeEventListener("click", uncompleteTask);
-    listItem.addEventListener("click", completeTask);
-}
-
-function clearTodoList() {
-    todoList.innerHTML = "";
-}
-
-function clearCompletedList() {
-    completedList.innerHTML = "";
-}
-
-
-/*
-const taskInput = document.getElementById("taskInput");
-const addTaskButton = document.getElementById("addTaskButton");
-const todoList = document.getElementById("todoList");
-const completedList = document.getElementById("completedList");
-const clearTodoButton = document.getElementById("clearTodoButton");
-const clearCompletedButton = document.getElementById("clearCompletedButton");
-
-addTaskButton.addEventListener("click", addTask);
-clearTodoButton.addEventListener("click", clearTodoList);
-clearCompletedButton.addEventListener("click", clearCompletedList);
-
 // Replace with your API URL
-const apiUrl = "https://your-api-url.com/tasks";
+const apiUrl = "http://localhost:8080/api/tasks";
+
+
+document.addEventListener("DOMContentLoaded", displayTask);
+addTaskButton.addEventListener("click", addTask)
+taskInput.addEventListener('keydown', function(e) {
+  // Check if the key pressed is Enter (keycode 13)
+  if (event.keyCode === 13) {
+    // Call your function here
+    addTask();
+  }
+});
+clearTodoButton.addEventListener("click",clearTodoList)
+clearCompletedButton.addEventListener("click", clearCompletedList)
+
+
+async function displayTask() {
+    //const taskText = taskInput.value.trim();
+//    if (taskText !== "") {
+        try {
+            const response = await fetch(apiUrl, {
+                method: "GET",
+               /* headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ text: taskText, completed: false }), */
+            });
+            if (response.ok) {
+                const task = await response.json();
+                console.log(`Displayed Task: ${task}`);
+                console.log(response)
+                if (task != "") {
+                    task.forEach(obj => {
+                        createTaskElement(obj)
+                    })
+                }
+                taskInput.value = "";
+            }
+        } catch (error) {
+            console.error("Error adding task:", error);
+        }
+//    }
+}
+
 
 async function addTask() {
     const taskText = taskInput.value.trim();
     if (taskText !== "") {
         try {
-            const response = await fetch(apiUrl, {
+              
+            const response = await fetch(`${apiUrl}/createTask`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ text: taskText, completed: false }),
             });
+          setTimeout( async function() {
             if (response.ok) {
                 const task = await response.json();
+                console.log(`Added task: ${task}`)
                 createTaskElement(task);
-                taskInput.value = "";
             }
+          }, 300);
         } catch (error) {
             console.error("Error adding task:", error);
+            taskInput.value ="";
         }
     }
 }
@@ -92,6 +80,7 @@ async function addTask() {
 function createTaskElement(task) {
     const listItem = document.createElement("li");
     listItem.textContent = task.text;
+    listItem.setAttribute('data-task-id', task.id);
     
     if (task.completed) {
         completedList.appendChild(listItem);
@@ -107,14 +96,17 @@ async function completeTask() {
     const taskId = listItem.getAttribute("data-task-id");
     
     try {
-        const response = await fetch(`${apiUrl}/${taskId}`, {
+        const response = await fetch(`${apiUrl}/changeStatus/${taskId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ completed: true }),
+            body: JSON.stringify({
+            id: taskId,
+            completed: true }),
         });
         if (response.ok) {
+            console.log(response.json())
             completedList.appendChild(listItem);
             listItem.removeEventListener("click", completeTask);
             listItem.addEventListener("click", uncompleteTask);
@@ -126,12 +118,46 @@ async function completeTask() {
 
 // Implement uncompleteTask function similarly to completeTask
 
+async function uncompleteTask() {
+    const listItem = this;
+    const taskId = listItem.getAttribute("data-task-id");
+    
+    try {
+        const response = await fetch(`${apiUrl}/changeStatus/${taskId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+            id: taskId,
+            completed: true }),
+        });
+        if (response.ok) {
+            console.log(response.json());
+            todoList.appendChild(listItem);
+            listItem.removeEventListener("click", uncompleteTask);
+            listItem.addEventListener("click", completeTask);
+        }
+    } catch (error) {
+        console.error("Error completing task:", error);
+    }
+}
+
 async function clearTodoList() {
     try {
-        await fetch(`${apiUrl}/clear-todo`, {
+        const response = await fetch(`${apiUrl}/deleteStatus/${false}`, {
             method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ completed: false }),
         });
-        todoList.innerHTML = "";
+        
+        if (response.ok) {
+            console.log(response.json());
+            todoList.innerHTML = "";
+        }
+    
     } catch (error) {
         console.error("Error clearing todo list:", error);
     }
@@ -139,13 +165,22 @@ async function clearTodoList() {
 
 async function clearCompletedList() {
     try {
-        await fetch(`${apiUrl}/clear-completed`, {
+        const response = await fetch(`${apiUrl}/deleteStatus/${true}`, {
             method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+            completed: true }),
         });
-        completedList.innerHTML = "";
+        
+        if (response.ok) {
+            console.log(response.json());
+            completedList.innerHTML = "";
+        }
+        
     } catch (error) {
         console.error("Error clearing completed list:", error);
     }
 }
 
-*/
